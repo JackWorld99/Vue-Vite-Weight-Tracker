@@ -11,7 +11,7 @@ const weightChart = shallowRef(null)
 
 const weightInput = ref(0)
 
-var removeAll = true
+var store = true
 
 const currentWeight = computed(() => {
     return weights.value.sort((a, b) => b.date - a.date)[0] || { weight: 0 }
@@ -29,7 +29,7 @@ const addWeight = () => {
 
 const clearAll = () => {
     localStorage.clear()
-    removeAll = false
+    store = false
     weights.value = [];
 }
 
@@ -40,7 +40,7 @@ const delItem = (delID) => {
 
 
 watch(weights, (newWeights) => {
-    if (removeAll) localStorage.setItem('weights', JSON.stringify(newWeights))
+    if (store) localStorage.setItem('weights', JSON.stringify(newWeights))
 
     const weightArray = [...newWeights]
     const sortWeights = weightArray.sort((a, b) => a.date - b.date)

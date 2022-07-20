@@ -1,14 +1,17 @@
 <script setup>
-import { ref, shallowRef, computed, watch, nextTick } from "vue"
+import { ref, shallowRef, computed, watch, nextTick, onMounted } from "vue"
 import Chart from "chart.js/auto"
 
 const weights = ref([])
+weights.value = JSON.parse(localStorage.getItem('weights')) || []
 
 const weightChartEl = ref(null)
 
 const weightChart = shallowRef(null)
 
 const weightInput = ref(0)
+
+var removeAll = true
 
 const currentWeight = computed(() => {
     return weights.value.sort((a, b) => b.date - a.date)[0] || { weight: 0 }
@@ -18,19 +21,33 @@ const addWeight = () => {
     if (weightInput.value > 0) {
         weights.value.push({
             weight: weightInput.value,
-            date: new Date(new Date().getTime()).toLocaleDateString('en-GB'),
+            date: new Date().getTime(),
             time: new Date().toLocaleTimeString(),
         })
     }
 }
 
+const clearAll = () => {
+    localStorage.clear()
+    removeAll = false
+    weights.value = [];
+}
+
+const delItem = (delID) => {
+    weights.value.splice(delID, 1)
+    localStorage.setItem("weights", JSON.stringify(weights))
+}
+
+
 watch(weights, (newWeights) => {
+    if (removeAll) localStorage.setItem('weights', JSON.stringify(newWeights))
+
     const weightArray = [...newWeights]
     const sortWeights = weightArray.sort((a, b) => a.date - b.date)
 
     if (weightChart.value) {
         weightChart.value.data.labels = sortWeights
-            .map(weight => weight.date)
+            .map(weight => new Date(weight.date).toLocaleDateString())
             .slice(-7)
 
         weightChart.value.data.datasets[0].data = sortWeights
@@ -38,6 +55,7 @@ watch(weights, (newWeights) => {
             .slice(-7)
 
         weightChart.value.update()
+        weightInput.value = weights.value.map(weight => weight.weight)[0]
 
         return
     }
@@ -46,7 +64,7 @@ watch(weights, (newWeights) => {
         weightChart.value = new Chart(weightChartEl.value.getContext('2d'), {
             type: 'line',
             data: {
-                labels: sortWeights.map(weight => weight.date),
+                labels: sortWeights.map(weight => new Date(weight.date).toLocaleDateString()),
                 datasets: [{
                     label: "Weight",
                     data: sortWeights.map(weight => weight.weight),
@@ -62,7 +80,31 @@ watch(weights, (newWeights) => {
             }
         })
     })
+
 }, { deep: true })
+
+if (weights.value.length != 0) {
+    nextTick(() => {
+        weightChart.value = new Chart(weightChartEl.value.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: weights.value.sort((a, b) => a.date - b.date).map(weight => new Date(weight.date).toLocaleDateString()),
+                datasets: [{
+                    label: "Weight",
+                    data: weights.value.sort((a, b) => a.date - b.date).map(weight => weight.weight),
+                    backgroundColor: '#80e8ff',
+                    borderColor: '#2681d6',
+                    borderWidth: 1,
+                    tension: 0.1,
+                    fill: true,
+                }]
+            },
+            options: {
+                responsive: true,
+            }
+        })
+    })
+}
 
 </script>
 
@@ -85,13 +127,19 @@ watch(weights, (newWeights) => {
                 <canvas ref="weightChartEl"></canvas>
             </div>
             <div class="weight-history">
-                <h2>Weight History</h2>
+                <div class="space">
+                    <h2>Weight History</h2> <button @click="clearAll" type="button" style="margin-bottom: 1rem;">Clear
+                        All</button>
+                </div>
                 <ul>
-                    <li v-for="weight in weights">
+                    <li v-for="(weight, index) in weights">
                         <span>{{ weight.weight }} kg</span>
-                        <small>
-                            {{ weight.date }} &ensp;{{ weight.time }}
-                        </small>
+                        <div>
+                            <small>
+                                {{ new Date(weight.date).toLocaleDateString('en-GB') }} &ensp;{{ weight.time }}
+                            </small> &emsp;
+                            <i class="fa-solid fa-trash" @click="delItem(index)"></i>
+                        </div>
                     </li>
                 </ul>
             </div>
@@ -227,6 +275,11 @@ form input[type="submit"]:hover {
     border-radius: 0.5rem;
 }
 
+.space {
+    display: flex;
+    justify-content: space-between;
+}
+
 .weight-history ul li:nth-child(even) {
     background-color: #2681d6;
 }
@@ -254,5 +307,27 @@ form input[type="submit"]:hover {
 .weight-history ul li small {
     color: white;
     font-style: italic;
+}
+
+.fa-solid,
+.fa-trash {
+    color: white;
+}
+
+.space button[type="button"] {
+    appearance: none;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    background-color: #2681d6;
+    color: white;
+    border-radius: 0.4rem;
+    padding: 0.5rem 0.8rem;
+}
+
+.space button[type="button"]:hover {
+    background-color: #0aa6fa;
+    color: white;
+    border-left-color: #2681d6;
 }
 </style>

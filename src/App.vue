@@ -28,9 +28,32 @@ const addWeight = () => {
 }
 
 const clearAll = () => {
-    localStorage.clear()
-    store = false
-    weights.value = [];
+    Swal.fire({
+        title: 'Are you sure, clear all record?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+
+            localStorage.clear()
+            store = false
+            weights.value = [];
+
+            Swal.fire({
+                title: 'Deleted!',
+                text: 'All url has been deleted.',
+                icon: 'success',
+                showConfirmButton: false,
+                timer: 1000
+            }).then(() => {
+                location.reload();
+            });
+        }
+    });
 }
 
 const delItem = (delID) => {
@@ -55,7 +78,7 @@ watch(weights, (newWeights) => {
             .slice(-7)
 
         weightChart.value.update()
-        weightInput.value = weights.value.map(weight => weight.weight)[0]
+        weightInput.value = weights.value.map(weight => weight.weight)[0] || 0
 
         return
     }
